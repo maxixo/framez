@@ -1,9 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, RefreshControl, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ListRenderItem } from 'react-native';
+﻿import React, { useEffect, useState } from 'react';
+import {
+  View,
+  FlatList,
+  RefreshControl,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  ListRenderItem,
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePostStore, Post } from '../stores/postStore';
 import { useStoryStore } from '../stores/storyStore';
 import { PostCard } from '../components/PostCard';
+import { useAuthStore } from '../stores/authStore';
+import { Avatar } from '../components/Avatar';
+import { useThemeStore } from '../stores/themeStore';
 
 interface StoryUser {
   id: string;
@@ -69,17 +83,9 @@ const StoriesBar: React.FC<StoriesBarProps> = ({ stories }) => {
 
   return (
     <View style={styles.storiesWrapper}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.storiesScroll}
-      >
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
         {stories.map((story: StoryUser) => (
-          <StoryItem
-            key={story.id}
-            story={story}
-            onPress={() => handleStoryPress(story)}
-          />
+          <StoryItem key={story.id} story={story} onPress={() => handleStoryPress(story)} />
         ))}
       </ScrollView>
     </View>
@@ -87,16 +93,23 @@ const StoriesBar: React.FC<StoriesBarProps> = ({ stories }) => {
 };
 
 const FeedScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const posts = usePostStore((state) => state.posts);
   const fetchInitial = usePostStore((state) => state.fetchInitial);
   const subscribeRealtime = usePostStore((state) => state.subscribeRealtime);
   const refresh = usePostStore((state) => state.refresh);
-  
+  const deletePost = usePostStore((state) => state.deletePost);
+
   const stories = useStoryStore((state) => state.stories);
   const fetchStories = useStoryStore((state) => state.fetchStories);
   const refreshStories = useStoryStore((state) => state.refreshStories);
-  
+
+  const profile = useAuthStore((s) => s.profile);
+
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const isDark = useThemeStore((s) => s.isDark);
+  const toggleTheme = useThemeStore((s) => s.toggle);
+  const [randSeed, setRandSeed] = useState<number>(Date.now());
 
   useEffect(() => {
     const loadData = async (): Promise<void> => {
@@ -120,15 +133,18 @@ const FeedScreen: React.FC = () => {
       console.error('Error refreshing:', error);
     } finally {
       setRefreshing(false);
+      setRandSeed(Date.now());
     }
   };
 
   const renderHeader = (): React.ReactElement => {
+    const headerBg = isDark ? '#0f0f10' : '#fff';
+    const border = isDark ? '#1f1f22' : '#e0e0e0';
     return (
       <View>
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: headerBg, borderBottomColor: border }]}>
           <LinearGradient
-            colors={['#f09433', '#e6683c', '#dc2743', '#cc2366', '#bc1888']}
+            colors={['#FFD700', '#FF9A00', '#FF6A00', '#FF3D00']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.logoGradient}
@@ -136,11 +152,42 @@ const FeedScreen: React.FC = () => {
             <Text style={styles.logoText}>Framez</Text>
           </LinearGradient>
           <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
-              <Text style={styles.icon}>♥</Text>
+            {/* Theme Switch */}
+            <TouchableOpacity
+              accessibilityLabel="Toggle theme"
+              onPress={toggleTheme}
+              activeOpacity={0.8}
+              style={[
+                styles.themeSwitch,
+                {
+                  backgroundColor: isDark ? '#27272a' : '#e5e7eb',
+                  justifyContent: isDark ? 'flex-end' : 'flex-start',
+                  borderColor: isDark ? '#3f3f46' : '#d4d4d8',
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.themeThumb,
+                  { backgroundColor: isDark ? '#3f3f46' : '#fff', borderColor: isDark ? '#52525b' : '#d4d4d8' },
+                ]}
+              >
+                <Text style={styles.themeIcon}>{isDark ? '🌙' : '☀️'}</Text>
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
-              <Text style={styles.icon}>✉</Text>
+
+            {/* Profile Button */}
+            <TouchableOpacity
+              accessibilityLabel="Open profile"
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.8}
+              style={[styles.profileBtn, { borderColor: isDark ? '#3f3f46' : '#e5e7eb' }]}
+            >
+              <Avatar
+                uri={profile?.avatar_url || null}
+                size={28}
+                name={profile?.full_name || profile?.username || 'You'}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -149,8 +196,28 @@ const FeedScreen: React.FC = () => {
     );
   };
 
+  // Deterministic seeded random in [0,1)
+  const rand01 = (id: string, seed: number): number => {
+    const s = id + ':' + String(seed);
+    let h = 2166136261 >>> 0; // FNV-1a
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0) / 4294967295;
+  };
+
   const renderItem: ListRenderItem<Post> = ({ item }): React.ReactElement => {
-    return <PostCard post={item} />;
+    const showImage = !!item.image_url && rand01(String(item.id), randSeed) < 0.5; // ~50% selection per refresh
+    return (
+      <PostCard
+        post={item}
+        isDark={isDark}
+        showImage={showImage}
+        onPress={() => navigation.navigate('Profile', { userId: item.author_id })}
+        onDelete={() => deletePost(item.id)}
+      />
+    );
   };
 
   const keyExtractor = (item: Post): string => {
@@ -158,14 +225,14 @@ const FeedScreen: React.FC = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && styles.containerDark]}>
       <FlatList<Post>
         data={posts}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor="#262626"
             colors={['#262626']}
@@ -174,6 +241,7 @@ const FeedScreen: React.FC = () => {
         ListHeaderComponent={renderHeader}
         stickyHeaderIndices={[0]}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
       />
     </View>
   );
@@ -185,6 +253,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  containerDark: {
+    backgroundColor: '#0b0b0c',
   },
   header: {
     backgroundColor: '#fff',
@@ -198,27 +269,58 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   logoGradient: {
-    paddingHorizontal: 2,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   logoText: {
-    fontSize: 28,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    fontSize: 26,
+    fontWeight: '800',
+    fontStyle: 'italic',
+    letterSpacing: 0.8,
     color: '#fff',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   headerIcons: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 12,
+    alignItems: 'center',
   },
-  iconButton: {
-    padding: 4,
+  themeSwitch: {
+    width: 56,
+    height: 32,
+    borderRadius: 16,
+    padding: 2,
+    borderWidth: 1,
   },
-  icon: {
-    fontSize: 24,
+  themeThumb: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  themeIcon: {
+    fontSize: 14,
+  },
+  profileBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   storiesWrapper: {
     backgroundColor: '#fff',
@@ -282,4 +384,9 @@ const styles = StyleSheet.create({
     color: '#262626',
     maxWidth: 70,
   },
+  listContent: {
+    paddingBottom: 16,
+  },
 });
+
+

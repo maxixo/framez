@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuthStore } from './../stores/authStore';
+import { useThemeStore } from '../stores/themeStore';
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -9,6 +10,7 @@ export default function AuthScreen() {
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const { signIn, signUp } = useAuthStore();
+  const isDark = useThemeStore((s) => s.isDark);
 
   const submit = async () => {
     setError(null);
@@ -21,15 +23,24 @@ export default function AuthScreen() {
     }
   };
 
+  const colors = {
+    bg: isDark ? '#0b0b0c' : '#fff',
+    text: isDark ? '#e5e5ea' : '#111',
+    border: isDark ? '#2c2c2e' : '#ddd',
+    inputBg: isDark ? '#1c1c1e' : '#fff',
+    button: isDark ? '#fafafa' : '#111',
+    buttonText: isDark ? '#111' : '#fff',
+  };
+
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.container}>
-      <Text style={styles.title}>Framez</Text>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.container, { backgroundColor: colors.bg }]}>
+      <Text style={[styles.title, { color: colors.text }]}>Framez</Text>
       {mode === 'signup' && (
         <TextInput
           placeholder="Full name"
           value={fullName}
           onChangeText={setFullName}
-          style={styles.input}
+          style={[styles.input, { borderColor: colors.border, backgroundColor: colors.inputBg, color: colors.text }]}
           autoCapitalize="words"
         />
       )}
@@ -37,7 +48,7 @@ export default function AuthScreen() {
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.inputBg, color: colors.text }]}
         keyboardType="email-address"
         autoCapitalize="none"
       />
@@ -45,15 +56,15 @@ export default function AuthScreen() {
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
-        style={styles.input}
+        style={[styles.input, { borderColor: colors.border, backgroundColor: colors.inputBg, color: colors.text }]}
         secureTextEntry
       />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity onPress={submit} style={styles.button}>
-        <Text style={styles.buttonText}>{mode === 'login' ? 'Log in' : 'Create account'}</Text>
+      {error ? <Text style={[styles.error, { color: 'crimson' }]}>{error}</Text> : null}
+      <TouchableOpacity onPress={submit} style={[styles.button, { backgroundColor: colors.button }]}>
+        <Text style={[styles.buttonText, { color: colors.buttonText }]}>{mode === 'login' ? 'Log in' : 'Create account'}</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => setMode(mode === 'login' ? 'signup' : 'login')}>
-        <Text style={styles.switchText}>
+        <Text style={[styles.switchText, { color: colors.text }]}>
           {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
         </Text>
       </TouchableOpacity>

@@ -2,12 +2,13 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { ActivityIndicator, View } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import AuthScreen from './../screens/AuthScreen';
 import FeedScreen from './../screens/FeedScreen';
 import CreatePostScreen from './../screens/CreatePostScreen';
 import ProfileScreen from './../screens/ProfileScreen';
 import { useAuthStore } from './../stores/authStore';
-import { ActivityIndicator, View } from 'react-native';
 
 
         const Stack = createNativeStackNavigator();
@@ -15,13 +16,43 @@ import { ActivityIndicator, View } from 'react-native';
 
 
         function TabsNav() {
-        return (
-        <Tabs.Navigator screenOptions={{ headerShown: false }}>
-        <Tabs.Screen name="Feed" component={FeedScreen} />
-        <Tabs.Screen name="Create" component={CreatePostScreen} />
-        <Tabs.Screen name="Profile" component={ProfileScreen} />
-        </Tabs.Navigator>
-        );
+          return (
+            <Tabs.Navigator
+              screenOptions={({ route }) => ({
+                headerShown: false,
+                tabBarShowLabel: false,
+                tabBarActiveTintColor: '#111',
+                tabBarInactiveTintColor: '#9ca3af',
+                tabBarStyle: {
+                  height: 60,
+                  paddingBottom: 8,
+                  paddingTop: 8,
+                  backgroundColor: '#fff',
+                  borderTopColor: '#e5e7eb',
+                  borderTopWidth: 1,
+                },
+                tabBarIcon: ({ color, size, focused }) => {
+                  let icon: keyof typeof Feather.glyphMap = 'circle';
+                  switch (route.name) {
+                    case 'Feed':
+                      icon = 'home';
+                      break;
+                    case 'Create':
+                      icon = 'plus-square';
+                      break;
+                    case 'Profile':
+                      icon = 'user';
+                      break;
+                  }
+                  return <Feather name={icon} size={size ?? 22} color={color} />;
+                },
+              })}
+            >
+              <Tabs.Screen name="Feed" component={FeedScreen} />
+              <Tabs.Screen name="Create" component={CreatePostScreen} />
+              <Tabs.Screen name="Profile" component={ProfileScreen} />
+            </Tabs.Navigator>
+          );
         }
 
 

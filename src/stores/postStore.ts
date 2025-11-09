@@ -41,6 +41,7 @@ interface PostStore {
   bookmarkPost: (postId: string) => void;
   addComment: (postId: string) => void;
   createPost: (newPost: { content?: string; imageUri: string | null }) => Promise<{ error?: string }>;
+  deletePost: (postId: string) => void;
 }
 
 export const usePostStore = create<PostStore>((set, get) => ({
@@ -282,5 +283,9 @@ export const usePostStore = create<PostStore>((set, get) => ({
       console.error('Error creating post:', e);
       return { error: 'Failed to create post' };
     }
+  },
+
+  deletePost: (postId: string) => {
+    set((state) => ({ posts: state.posts.filter((p) => p.id !== postId) }));
   }
 }));
