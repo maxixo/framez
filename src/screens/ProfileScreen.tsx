@@ -13,6 +13,11 @@ export default function ProfileScreen() {
     refreshProfile();
   }, []);
 
+  useEffect(() => {
+  console.log("Profile data:", profile);
+}, [profile]);
+
+
   const myPosts = useMemo(() => posts.filter(p => p.author_id === user?.id), [posts, user?.id]);
   const myImages = useMemo(() => myPosts.filter(p => !!p.image_url), [myPosts]);
 
@@ -83,3 +88,4 @@ const styles = StyleSheet.create({
   gridImage: { width: '100%', height: '100%' },
   sectionTitle: { paddingHorizontal: 16, paddingVertical: 12, fontWeight: '700', borderTopColor: '#eee', borderTopWidth: 1 },
 });
+

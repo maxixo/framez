@@ -31,9 +31,10 @@ return (
 
 {/* Image (Instagram-style square) */}
 {post.image_url ? (
-<Image source={{ uri: post.image_url }} style={styles.image} resizeMode="cover" />
-) : null}
-
+  <Image source={{ uri: post.image_url }} style={styles.image} resizeMode="cover" />
+) : (
+  <Text>No image available</Text> // Fallback message
+)}
 
 {/* Caption */}
 {post.content ? (

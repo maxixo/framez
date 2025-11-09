@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "username": "john.doe",
+    "avatar": "https://randomuser.me/api/portraits/men/1.jpg",
+    "image": "https://picsum.photos/seed/1/300/500"
+  },
+  {
+    "id": "2",
+    "username": "jane.doe",
+    "avatar": "https://randomuser.me/api/portraits/women/2.jpg",
+    "image": "https://picsum.photos/seed/2/300/500"
+  },
+  {
+    "id": "3",
+    "username": "peter.jones",
+    "avatar": "https://randomuser.me/api/portraits/men/3.jpg",
+    "image": "https://picsum.photos/seed/3/300/500"
+  },
+  {
+    "id": "4",
+    "username": "susan.smith",
+    "avatar": "https://randomuser.me/api/portraits/women/4.jpg",
+    "image": "https://picsum.photos/seed/4/300/500"
+  },
+  {
+    "id": "5",
+    "username": "david.williams",
+    "avatar": "https://randomuser.me/api/portraits/men/5.jpg",
+    "image": "https://picsum.photos/seed/5/300/500"
+  }
+]

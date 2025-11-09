@@ -3,6 +3,11 @@ import { View, TextInput, StyleSheet, TouchableOpacity, Text, Image, Alert } fro
 import * as ImagePicker from 'expo-image-picker';
 import { usePostStore } from './../stores/postStore';
 
+type NewPost = {
+  content?: string;
+  imageUri: string | null;
+};
+
 export default function CreatePostScreen() {
   const [content, setContent] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -21,7 +26,7 @@ export default function CreatePostScreen() {
   };
 
   const submit = async () => {
-    const { error } = await createPost({ content: content.trim() || undefined, imageUri });
+    const { error } = await createPost({ content: content.trim() || undefined, imageUri } as NewPost);
     if (error) Alert.alert('Error', error);
     else {
       setContent('');
