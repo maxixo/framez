@@ -27,8 +27,8 @@
 },
 "plugins": [],
 "extra": {
-"supabaseUrl": "https://YOUR-PROJECT-REF.supabase.co",
-"supabaseAnonKey": "YOUR-ANON-KEY"
+"supabaseUrl": "https://rhbrmaoasvxndojsxdgd.supabase.co",
+"supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYnJtYW9hc3Z4bmRvanN4ZGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2NzgzODMsImV4cCI6MjA3ODI1NDM4M30.afUpGi4r8hWwLh1ugqCmxqZxns_OCdXgRb8eOdBFf2c"
 }
 }
 }
