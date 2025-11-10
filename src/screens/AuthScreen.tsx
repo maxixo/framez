@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useAuthStore } from './../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AuthScreen() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
@@ -34,7 +35,16 @@ export default function AuthScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={[styles.container, { backgroundColor: colors.bg }]}>
-      <Text style={[styles.title, { color: colors.text }]}>Framez</Text>
+      <View style={styles.brand}>
+        <LinearGradient
+          colors={['#FFD700', '#FF9A00', '#FF6A00', '#FF3D00']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.logoGradient}
+        >
+          <Text style={styles.logoText}>Framez</Text>
+        </LinearGradient>
+      </View>
       {mode === 'signup' && (
         <TextInput
           placeholder="Full name"
@@ -75,6 +85,29 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
   title: { fontSize: 32, fontWeight: '800', marginBottom: 24 },
+  brand: { alignItems: 'center', marginBottom: 24 },
+  logoGradient: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  logoText: {
+    fontSize: 26,
+    fontWeight: '800',
+    fontStyle: 'italic',
+    letterSpacing: 0.8,
+    color: '#fff',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    textShadowColor: 'rgba(0,0,0,0.25)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
   input: { width: '100%', height: 48, borderColor: '#ddd', borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, marginBottom: 12 },
   button: { backgroundColor: '#111', paddingVertical: 14, borderRadius: 10, width: '100%', alignItems: 'center', marginTop: 4 },
   buttonText: { color: '#fff', fontWeight: '700' },

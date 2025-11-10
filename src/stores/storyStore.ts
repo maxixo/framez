@@ -1,36 +1,50 @@
 import { create } from 'zustand';
 import storiesData from './../data/stories.json';
 
-interface Story {
+export interface StoryMedia {
   id: string;
-  username: string;
-  avatar:string;
-  image: string;
- 
+  type: string;
+  url: string;
+  duration: number;
+  timestamp: string;
 }
 
-// Type guard to check if an object is a valid Story
-function isStory(obj: any): obj is Story {
+export interface StoryUser {
+  id: string;
+  userId: string;
+  username: string;
+  avatar: string;
+  isYours: boolean;
+  hasStory: boolean;
+  storyCount: number;
+  lastUpdated: string | null;
+  stories?: StoryMedia[];
+}
+
+// Type guard to validate StoryUser objects from JSON
+function isStoryUser(obj: any): obj is StoryUser {
   return (
     typeof obj === 'object' &&
     obj !== null &&
     typeof obj.id === 'string' &&
+    typeof obj.userId === 'string' &&
     typeof obj.username === 'string' &&
     typeof obj.avatar === 'string' &&
-    typeof obj.image === 'string'
+    typeof obj.isYours === 'boolean' &&
+    typeof obj.hasStory === 'boolean'
   );
 }
 
-interface StoryStore {
-  stories: Story[];
-  currentStory: Story | null;
+export interface StoryStore {
+  stories: StoryUser[];
+  currentStory: StoryUser | null;
   loading: boolean;
-  
+
   // Actions
   fetchStories: () => Promise<void>;
-  addStory: (storyData: Omit<Story, 'id'>) => void;
+  addStory: (userId: string, story: StoryMedia) => void;
   viewStory: (storyId: string) => void;
-  setCurrentStory: (story: Story | null) => void;
+  setCurrentStory: (story: StoryUser | null) => void;
   markStoryAsViewed: (storyId: string) => void;
   refreshStories: () => Promise<void>;
 }
@@ -43,12 +57,14 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
   fetchStories: async () => {
     set({ loading: true });
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      if (Array.isArray(storiesData)) {
-        const validStories = storiesData.filter(isStory);
-        set({ stories: validStories, loading: false });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const typed = storiesData as { stories: unknown[] };
+      if (Array.isArray(typed?.stories)) {
+        const valid = typed.stories.filter(isStoryUser) as StoryUser[];
+        set({ stories: valid, loading: false });
+      } else {
+        set({ loading: false });
       }
     } catch (error) {
       console.error('Error fetching stories:', error);
@@ -56,33 +72,37 @@ export const useStoryStore = create<StoryStore>((set, get) => ({
     }
   },
 
-  addStory: (storyData: Omit<Story, 'id'>) => {
-    set(state => {
-      const newStory: Story = {
-        id: new Date().toISOString(),
-        ...storyData,
-      };
-      return { stories: [newStory, ...state.stories] };
+  addStory: (userId: string, story: StoryMedia) => {
+    set((state) => {
+      const updated = state.stories.map((s) =>
+        s.userId === userId
+          ? {
+              ...s,
+              hasStory: true,
+              storyCount: s.storyCount + 1,
+              lastUpdated: new Date().toISOString(),
+              stories: [...(s.stories ?? []), story],
+            }
+          : s
+      );
+      return { stories: updated };
     });
   },
 
   viewStory: (storyId: string) => {
-    const story = get().stories.find(s => s.id === storyId);
-    if (story) {
-      set({ currentStory: story });
-    }
+    const storyUser = get().stories.find((s) => s.id === storyId || s.userId === storyId);
+    if (storyUser) set({ currentStory: storyUser });
   },
 
-  setCurrentStory: (story: Story | null) => {
+  setCurrentStory: (story: StoryUser | null) => {
     set({ currentStory: story });
   },
 
   markStoryAsViewed: (storyId: string) => {
-    // In production, this would make an API call to mark as viewed
     console.log('Story viewed:', storyId);
   },
 
   refreshStories: async () => {
     await get().fetchStories();
-  }
+  },
 }));

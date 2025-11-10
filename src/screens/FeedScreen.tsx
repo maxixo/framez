@@ -13,22 +13,11 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePostStore, Post } from '../stores/postStore';
-import { useStoryStore } from '../stores/storyStore';
+import { useStoryStore, type StoryUser } from '../stores/storyStore';
 import { PostCard } from '../components/PostCard';
 import { useAuthStore } from '../stores/authStore';
 import { Avatar } from '../components/Avatar';
 import { useThemeStore } from '../stores/themeStore';
-
-interface StoryUser {
-  id: string;
-  userId: string;
-  username: string;
-  avatar: string;
-  isYours: boolean;
-  hasStory: boolean;
-  storyCount: number;
-  lastUpdated: string | null;
-}
 
 interface StoryItemProps {
   story: StoryUser;
@@ -105,6 +94,7 @@ const FeedScreen: React.FC = () => {
   const refreshStories = useStoryStore((state) => state.refreshStories);
 
   const profile = useAuthStore((s) => s.profile);
+  const currentUserId = useAuthStore((s) => s.user?.id);
 
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const isDark = useThemeStore((s) => s.isDark);
@@ -208,7 +198,9 @@ const FeedScreen: React.FC = () => {
   };
 
   const renderItem: ListRenderItem<Post> = ({ item }): React.ReactElement => {
-    const showImage = !!item.image_url && rand01(String(item.id), randSeed) < 0.5; // ~50% selection per refresh
+    const isOwnPost = currentUserId ? String(item.author_id) === String(currentUserId) : false;
+    // Always show image for the current user's posts; randomize for others
+    const showImage = !!item.image_url && (isOwnPost || rand01(String(item.id), randSeed) < 0.5);
     return (
       <PostCard
         post={item}
