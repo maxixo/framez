@@ -143,7 +143,13 @@ export const usePostStore = create<PostStore>((set, get) => ({
         };
         return post;
       });
-      set({ posts: transformed, loading: false });
+      // Randomize order (Fisher–Yates)
+      const arr = [...transformed];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      set({ posts: arr, loading: false });
       
       // For production with Supabase:
       // await get().fetchFromSupabase();

@@ -228,6 +228,7 @@ const FeedScreen: React.FC = () => {
     <View style={[styles.container, isDark && styles.containerDark]}>
       <FlatList<Post>
         data={posts}
+        extraData={posts}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         refreshControl={

@@ -17,10 +17,11 @@ type PostCardProps = {
 };
 
 export const PostCard: React.FC<PostCardProps> = ({ post, onPress, isDark, showImage, onDelete }) => {
-  const name = post.author?.username || post.author?.full_name || 'Unknown';
+  const name = post.author?.username || post.author?.full_name || (post as any).username || 'Unknown';
   const when = dayjs(post.created_at).fromNow();
   const storeDark = useThemeStore((s) => s.isDark);
   const dark = typeof isDark === 'boolean' ? isDark : storeDark;
+  const avatarUri = post.author?.avatar_url || (post as any).user_avatar || null;
 
   const Container: any = onPress ? TouchableOpacity : View;
 
@@ -36,7 +37,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress, isDark, showI
     <Container style={[styles.card, { backgroundColor: cardColors.bg, borderColor: cardColors.border }]} onPress={onPress} activeOpacity={0.8}>
       {/* Header */}
       <View style={styles.header}>
-        <Avatar uri={post.author?.avatar_url || null} size={40} name={name} />
+        <Avatar uri={avatarUri} size={40} name={name} />
         <View style={styles.info}>
           <Text style={[styles.author, { color: cardColors.text }]}>{name}</Text>
           <Text style={[styles.time, { color: cardColors.sub }]}>{when}</Text>

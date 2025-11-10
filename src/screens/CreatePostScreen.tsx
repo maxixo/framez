@@ -3,6 +3,7 @@ import { View, TextInput, StyleSheet, TouchableOpacity, Text, Image, Alert } fro
 import * as ImagePicker from 'expo-image-picker';
 import { usePostStore } from './../stores/postStore';
 import { useThemeStore } from '../stores/themeStore';
+import { useNavigation } from '@react-navigation/native';
 
 type NewPost = {
   content?: string;
@@ -12,9 +13,10 @@ type NewPost = {
 export default function CreatePostScreen() {
   const [content, setContent] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const { createPost } = usePostStore();
+  const { createPost, posts } = usePostStore();
   const isDark = useThemeStore((s) => s.isDark);
   const toggleTheme = useThemeStore((s) => s.toggle);
+  const navigation = useNavigation<any>();
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -34,7 +36,12 @@ export default function CreatePostScreen() {
     else {
       setContent('');
       setImageUri(null);
-      Alert.alert('Posted', 'Your post has been shared.');
+      // Debug: confirm the new post is at the top of the list
+      try {
+        console.log('Top post', posts?.[0]);
+      } catch {}
+      // Jump back to the Feed so the new post is visible immediately
+      navigation.navigate('Feed');
     }
   };
 

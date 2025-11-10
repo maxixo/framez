@@ -51,6 +51,7 @@ export default function ProfileScreen() {
   return (
     <FlatList
       data={viewPosts}
+      extraData={viewPosts}
       keyExtractor={(item) => String(item.id)}
       renderItem={({ item }) => <PostCard post={item} />}
       onRefresh={refresh}
