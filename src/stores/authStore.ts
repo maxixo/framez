@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { useEffect } from 'react';
 import { supabase } from './../lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Profile } from '../lib/types';

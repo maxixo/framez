@@ -25,6 +25,11 @@ interface StoryItemProps {
 }
 
 const StoryItem: React.FC<StoryItemProps> = ({ story, onPress }) => {
+  const isDark = useThemeStore((s) => s.isDark);
+  const innerBg = isDark ? '#0f0f10' : '#fff';
+  const addBadgeBorder = isDark ? '#0f0f10' : '#fff';
+  const usernameColor = isDark ? '#e5e7eb' : '#262626';
+
   return (
     <TouchableOpacity style={styles.storyContainer} onPress={onPress} activeOpacity={0.7}>
       <LinearGradient
@@ -39,16 +44,16 @@ const StoryItem: React.FC<StoryItemProps> = ({ story, onPress }) => {
         end={{ x: 1, y: 1 }}
         style={styles.gradientRing}
       >
-        <View style={styles.storyImageContainer}>
+        <View style={[styles.storyImageContainer, { backgroundColor: innerBg }]}>
           <Image source={{ uri: story.avatar }} style={styles.storyImage} />
         </View>
       </LinearGradient>
       {story.isYours && !story.hasStory && (
-        <View style={styles.addStoryBadge}>
+        <View style={[styles.addStoryBadge, { borderColor: addBadgeBorder }]}>
           <Text style={styles.addStoryText}>+</Text>
         </View>
       )}
-      <Text style={styles.storyUsername} numberOfLines={1}>
+      <Text style={[styles.storyUsername, { color: usernameColor }]} numberOfLines={1}>
         {story.username}
       </Text>
     </TouchableOpacity>
@@ -60,6 +65,9 @@ interface StoriesBarProps {
 }
 
 const StoriesBar: React.FC<StoriesBarProps> = ({ stories }) => {
+  const isDark = useThemeStore((s) => s.isDark);
+  const bg = isDark ? '#0f0f10' : '#fff';
+  const border = isDark ? '#1f1f22' : '#e0e0e0';
   const handleStoryPress = (story: StoryUser): void => {
     if (story.isYours && !story.hasStory) {
       console.log('Add new story');
@@ -71,7 +79,7 @@ const StoriesBar: React.FC<StoriesBarProps> = ({ stories }) => {
   if (!stories || stories.length === 0) return null;
 
   return (
-    <View style={styles.storiesWrapper}>
+    <View style={[styles.storiesWrapper, { backgroundColor: bg, borderBottomColor: border }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storiesScroll}>
         {stories.map((story: StoryUser) => (
           <StoryItem key={story.id} story={story} onPress={() => handleStoryPress(story)} />
@@ -380,5 +388,3 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
 });
-
-

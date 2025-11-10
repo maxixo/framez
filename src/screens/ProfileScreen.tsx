@@ -14,6 +14,14 @@ export default function ProfileScreen() {
   const { posts, refresh } = usePostStore();
   const isDark = useThemeStore((s) => s.isDark);
 
+  const colors = {
+    text: isDark ? '#e5e7eb' : '#111',
+    sub: isDark ? '#a1a1aa' : '#666',
+    chipBg: isDark ? '#27272a' : '#f2f2f2',
+    border: isDark ? '#1f1f22' : '#eee',
+    tileBg: isDark ? '#1f1f22' : '#f0f0f0',
+  } as const;
+
   const selectedUserId = (route.params as any)?.userId as string | undefined;
   const userIdToShow = selectedUserId ?? user?.id;
 
@@ -33,11 +41,11 @@ export default function ProfileScreen() {
 
   const first = viewPosts[0];
   const displayName = selectedUserId
-    ? first?.author?.username || first?.author?.full_name || first?.username || 'User'
+    ? first?.username || 'User'
     : profile?.username || profile?.full_name || 'Your Profile';
   const emailToShow = selectedUserId ? undefined : profile?.email;
   const avatarUri = selectedUserId
-    ? first?.author?.avatar_url || first?.user_avatar || null
+    ? first?.user_avatar || null
     : profile?.avatar_url || null;
 
   return (
@@ -52,12 +60,12 @@ export default function ProfileScreen() {
           {/* Top bar with back button */}
           <View style={styles.topBar}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={[styles.backButton, { backgroundColor: colors.chipBg }]}
               onPress={() => navigation.navigate('Feed')}
               activeOpacity={0.8}
             >
-              <Text style={styles.backIcon}>{'<'}</Text>
-              <Text style={styles.backText}>Back</Text>
+              <Text style={[styles.backIcon, { color: colors.text }]}>{'<'}</Text>
+              <Text style={[styles.backText, { color: colors.text }]}>Back</Text>
             </TouchableOpacity>
           </View>
 
@@ -65,20 +73,20 @@ export default function ProfileScreen() {
           <View style={styles.header}>
             <Avatar uri={avatarUri || null} size={86} name={displayName || 'User'} />
             <View style={{ flex: 1, marginLeft: 16 }}>
-              <Text style={styles.name}>{displayName}</Text>
-              {emailToShow ? <Text style={styles.email}>{emailToShow}</Text> : null}
+              <Text style={[styles.name, { color: colors.text }]}>{displayName}</Text>
+              {emailToShow ? <Text style={[styles.email, { color: colors.sub }]}>{emailToShow}</Text> : null}
               <View style={styles.counters}>
                 <View style={styles.counterItem}>
-                  <Text style={styles.counterNum}>{viewPosts.length}</Text>
-                  <Text style={styles.counterLabel}>Posts</Text>
+                  <Text style={[styles.counterNum, { color: colors.text }]}>{viewPosts.length}</Text>
+                  <Text style={[styles.counterLabel, { color: colors.sub }]}>Posts</Text>
                 </View>
                 <View style={styles.counterItem}>
-                  <Text style={styles.counterNum}>-</Text>
-                  <Text style={styles.counterLabel}>Followers</Text>
+                  <Text style={[styles.counterNum, { color: colors.text }]}>-</Text>
+                  <Text style={[styles.counterLabel, { color: colors.sub }]}>Followers</Text>
                 </View>
                 <View style={styles.counterItem}>
-                  <Text style={styles.counterNum}>-</Text>
-                  <Text style={styles.counterLabel}>Following</Text>
+                  <Text style={[styles.counterNum, { color: colors.text }]}>-</Text>
+                  <Text style={[styles.counterLabel, { color: colors.sub }]}>Following</Text>
                 </View>
               </View>
             </View>
@@ -90,12 +98,12 @@ export default function ProfileScreen() {
           {/* Image grid */}
           {viewImages.length > 0 && (
             <View>
-              <View style={styles.gridTabs}>
-                <Text style={styles.gridTabActive}>Posts</Text>
+              <View style={[styles.gridTabs, { borderTopColor: colors.border, borderBottomColor: colors.border }]}>
+                <Text style={[styles.gridTabActive, { color: colors.text }]}>Posts</Text>
               </View>
               <View style={styles.gridWrap}>
                 {viewImages.map((item) => (
-                  <View key={`grid-${item.id}`} style={styles.gridTile}>
+                  <View key={`grid-${item.id}`} style={[styles.gridTile, { backgroundColor: colors.tileBg }] }>
                     <Image source={{ uri: item.image_url! }} style={styles.gridImage} />
                   </View>
                 ))}
@@ -103,7 +111,7 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          <Text style={styles.sectionTitle}>Posts</Text>
+          <Text style={[styles.sectionTitle, { borderTopColor: colors.border, color: colors.text }]}>Posts</Text>
         </View>
       }
       contentContainerStyle={[styles.content, isDark && styles.contentDark]}
@@ -136,4 +144,3 @@ const styles = StyleSheet.create({
   gridImage: { width: '100%', height: '100%' },
   sectionTitle: { paddingHorizontal: 16, paddingVertical: 12, fontWeight: '700', borderTopColor: '#eee', borderTopWidth: 1 },
 });
-

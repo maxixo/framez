@@ -26,13 +26,8 @@
       "bundler": "metro",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-        "expo-system-ui"
-
-    ],
+  
     "extra": {
-      "supabaseUrl": "https://rhbrmaoasvxndojsxdgd.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYnJtYW9hc3Z4bmRvanN4ZGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2NzgzODMsImV4cCI6MjA3ODI1NDM4M30.afUpGi4r8hWwLh1ugqCmxqZxns_OCdXgRb8eOdBFf2c",
       "eas": {
         "projectId": "a49ff3e5-2387-4b41-aab0-b40b0ff2e3c3"
       }

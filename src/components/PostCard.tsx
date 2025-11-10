@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import type { Post } from './../lib/types';
-import { Avatar } from './../components/Avatar';
+import type { Post } from '../lib/types';
+import { Avatar } from './Avatar';
 import { useThemeStore } from '../stores/themeStore';
 
 dayjs.extend(relativeTime);

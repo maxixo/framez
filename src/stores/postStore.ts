@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import postsData from './../data/posts.json';
 import { supabase } from './../lib/supabase';
 import { useAuthStore } from './authStore';
@@ -9,58 +7,120 @@ import { useAuthStore } from './authStore';
 export interface Post {
   id: string;
   user_id: string;
+  author_id: string;
   username: string;
   user_avatar: string;
   image_url: string | null;
   caption: string;
+  content: string | null;
   location: string | null;
   likes_count: number;
   comments_count: number;
   created_at: string;
   is_liked: boolean;
   is_bookmarked: boolean;
-  author_id: string;
-  content: string;
-  // Added to align with UI (PostCard) expectations
-  author?: {
-    username?: string | null;
-    avatar_url?: string | null;
-    full_name?: string | null;
-  };
 }
 
 interface PostStore {
+  deletePost: (postId: string) => void;
   posts: Post[];
   loading: boolean;
   error: string | null;
   
-  
   // Actions
+  createPost: (newPost: { content?: string; imageUri: string | null }) => Promise<{ error?: string }>;
   fetchInitial: () => Promise<void>;
   fetchFromSupabase: () => Promise<void>;
   refresh: () => Promise<void>;
   subscribeRealtime: () => void;
+  // alias to support older callers
+  subscribeToRealtime?: () => void;
   likePost: (postId: string) => void;
   bookmarkPost: (postId: string) => void;
   addComment: (postId: string) => void;
-  createPost: (newPost: { content?: string; imageUri: string | null }) => Promise<{ error?: string }>;
-  deletePost: (postId: string) => void;
 }
 
-export const usePostStore = create<PostStore>()(
-  persist(
-    (set, get) => ({
+export const usePostStore = create<PostStore>((set, get) => ({
   posts: [],
   loading: false,
   error: null,
-  fetchInitial: async () => {
-    // If we already have persisted posts, show them immediately
-    if (get().posts.length > 0) {
-      set({ loading: false });
-      // Fetch from Supabase in background
-      get().fetchFromSupabase().catch(() => {});
-      return;
+
+  createPost: async (newPost: { content?: string; imageUri: string | null }) => {
+    try {
+      set({ loading: true, error: null });
+
+      const { user, profile } = useAuthStore.getState();
+      const authorId = user?.id;
+      if (!authorId) {
+        const msg = 'Not authenticated';
+        set({ loading: false, error: msg });
+        return { error: msg };
+      }
+
+      const content = newPost.content ?? '';
+      const image_url = newPost.imageUri ?? null;
+
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({ user_id: authorId, author_id: authorId, image_url, caption: content })
+        .select('id, user_id, author_id, image_url, caption, created_at')
+        .single();
+
+      if (error) {
+        // Fallback to local mock if DB insert fails
+        console.warn('Supabase insert failed, falling back to local:', error);
+        const mockPost: Post = {
+          id: Date.now().toString(),
+          user_id: authorId,
+          author_id: authorId,
+          username: profile?.username || profile?.full_name || 'You',
+          user_avatar: profile?.avatar_url || 'https://i.pravatar.cc/150?img=1',
+          image_url,
+          caption: content,
+          content,
+          location: null,
+          likes_count: 0,
+          comments_count: 0,
+          created_at: new Date().toISOString(),
+          is_liked: false,
+          is_bookmarked: false,
+        };
+        set((state) => ({ posts: [mockPost, ...state.posts], loading: false }));
+        return {};
+      }
+
+      // Build the new post for immediate UI; dedupe if realtime also adds it
+      const built: Post = {
+        id: String(data.id),
+        user_id: (data as any).user_id ?? (data as any).author_id,
+        author_id: (data as any).author_id ?? (data as any).user_id,
+        username: profile?.username || profile?.full_name || 'You',
+        user_avatar: profile?.avatar_url || 'https://i.pravatar.cc/150?img=1',
+        image_url: data.image_url ?? null,
+        caption: data.caption ?? '',
+        content: data.caption ?? '',
+        location: null,
+        likes_count: 0,
+        comments_count: 0,
+        created_at: data.created_at ?? new Date().toISOString(),
+        is_liked: false,
+        is_bookmarked: false,
+      };
+
+      set((state) => {
+        const exists = state.posts.some((p) => String(p.id) === String(built.id));
+        return exists ? { loading: false } : { posts: [built, ...state.posts], loading: false };
+      });
+
+      return {};
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to create post';
+      set({ loading: false, error: errorMessage });
+      return { error: errorMessage };
     }
+  },
+
+  fetchInitial: async () => {
     set({ loading: true, error: null });
     try {
       // For development: Load from mock data
@@ -69,27 +129,24 @@ export const usePostStore = create<PostStore>()(
         const post: Post = {
           ...p,
           id: String(p.id),
-          // Align fields used by UI
+          user_id: p.user_id,
           author_id: p.user_id,
-          content: p.caption,
-          author: {
-            username: p.username ?? null,
-            avatar_url: p.user_avatar ?? null,
-            full_name: p.username ?? null,
-          },
-          // Ensure required numeric/boolean fields exist
+          image_url: p.image_url ?? null,
+          caption: p.caption ?? '',
+          content: p.caption ?? '',
+          location: p.location ?? null,
           likes_count: typeof p.likes_count === 'number' ? p.likes_count : 0,
           comments_count: typeof p.comments_count === 'number' ? p.comments_count : 0,
+          created_at: p.created_at ?? new Date().toISOString(),
           is_liked: Boolean(p.is_liked),
           is_bookmarked: Boolean(p.is_bookmarked),
-          location: p.location ?? null,
         };
         return post;
       });
-      set({ posts: transformed as Post[], loading: false });
+      set({ posts: transformed, loading: false });
       
-      // Then try Supabase (if configured)
-      await get().fetchFromSupabase();
+      // For production with Supabase:
+      // await get().fetchFromSupabase();
     } catch (error) {
       console.error('Error fetching posts:', error);
       set({ error: 'Failed to load posts', loading: false });
@@ -99,6 +156,8 @@ export const usePostStore = create<PostStore>()(
   fetchFromSupabase: async () => {
     set({ loading: true, error: null });
     try {
+      // Uncomment and use this when connecting to Supabase
+      /*
       const { data, error } = await supabase
         .from('posts')
         .select(`
@@ -108,37 +167,36 @@ export const usePostStore = create<PostStore>()(
           caption,
           location,
           created_at,
-          profiles:profiles ( username, avatar_url, full_name )
+          users!posts_user_id_fkey (
+            username,
+            avatar_url
+          ),
+          likes:post_likes(count),
+          comments:post_comments(count),
+          user_likes:post_likes!post_likes_user_id_fkey(user_id)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const transformedPosts: Post[] = (data as any[]).map((post: any) => {
-        const username = post?.profiles?.username ?? null;
-        const avatar_url = post?.profiles?.avatar_url ?? null;
-        const full_name = post?.profiles?.full_name ?? null;
-        const p: Post = {
-          id: String(post.id),
-          user_id: post.user_id,
-          author_id: post.user_id,
-          username: username ?? '',
-          user_avatar: avatar_url ?? '',
-          image_url: post.image_url ?? null,
-          caption: post.caption ?? '',
-          content: post.caption ?? '',
-          location: post.location ?? null,
-          likes_count: 0,
-          comments_count: 0,
-          created_at: post.created_at,
-          is_liked: false,
-          is_bookmarked: false,
-          author: { username, avatar_url, full_name },
-        };
-        return p;
-      });
+      // Transform Supabase data to match Post interface
+      const transformedPosts = data.map(post => ({
+        id: post.id,
+        user_id: post.user_id,
+        username: post.users.username,
+        user_avatar: post.users.avatar_url,
+        image_url: post.image_url,
+        caption: post.caption,
+        location: post.location,
+        likes_count: post.likes[0]?.count || 0,
+        comments_count: post.comments[0]?.count || 0,
+        created_at: post.created_at,
+        is_liked: post.user_likes.length > 0,
+        is_bookmarked: false, // You'd need to check bookmarks table
+      }));
 
       set({ posts: transformedPosts, loading: false });
+      */
     } catch (error) {
       console.error('Error fetching from Supabase:', error);
       set({ error: 'Failed to load posts from database', loading: false });
@@ -156,34 +214,59 @@ export const usePostStore = create<PostStore>()(
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'posts' },
-          (payload: any) => {
+          async (payload: any) => {
             const { eventType } = payload;
             if (eventType === 'INSERT') {
               const n = payload.new;
+              const aId = n.user_id ?? n.author_id;
+              let username = '';
+              let user_avatar: string | null = null;
+              try {
+                const { data: prof } = await supabase
+                  .from('profiles')
+                  .select('username, full_name, avatar_url')
+                  .eq('id', aId)
+                  .maybeSingle();
+                if (prof) {
+                  username = prof.username || prof.full_name || '';
+                  user_avatar = prof.avatar_url || null;
+                }
+              } catch {}
+
               const post: Post = {
                 id: String(n.id),
-                user_id: n.user_id,
-                author_id: n.user_id,
-                username: '',
-                user_avatar: '',
+                user_id: aId,
+                author_id: aId,
+                username,
+                user_avatar: user_avatar || 'https://i.pravatar.cc/150?img=1',
                 image_url: n.image_url ?? null,
                 caption: n.caption ?? '',
                 content: n.caption ?? '',
-                location: n.location ?? null,
+                location: null,
                 likes_count: 0,
                 comments_count: 0,
-                created_at: n.created_at,
+                created_at: n.created_at ?? new Date().toISOString(),
                 is_liked: false,
                 is_bookmarked: false,
-                author: {},
               };
-              set((state) => ({ posts: [post, ...state.posts] }));
+              set((state) => {
+                const exists = state.posts.some((p) => String(p.id) === String(post.id));
+                return exists ? state : { posts: [post, ...state.posts] };
+              });
             } else if (eventType === 'UPDATE') {
               const n = payload.new;
               set((state) => ({
                 posts: state.posts.map((p) =>
                   String(p.id) === String(n.id)
-                    ? { ...p, caption: n.caption ?? p.caption, content: n.caption ?? p.content, image_url: n.image_url ?? p.image_url, location: n.location ?? p.location }
+                    ? {
+                        ...p,
+                        user_id: (n.user_id ?? n.author_id ?? p.user_id),
+                        author_id: (n.author_id ?? n.user_id ?? p.author_id),
+                        image_url: n.image_url ?? p.image_url,
+                        caption: n.caption ?? p.caption,
+                        content: n.caption ?? p.content,
+                        created_at: n.created_at ?? p.created_at,
+                      }
                     : p
                 ),
               }));
@@ -195,13 +278,39 @@ export const usePostStore = create<PostStore>()(
         )
         .subscribe();
 
-      // Optional: return cleanup
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      // Note: store method returns void; unsubscribe can be added if needed
     } catch (e) {
-      console.warn('Realtime subscription failed', e);
+      console.warn('Realtime subscription setup failed:', e);
     }
+  },
+
+  // Backward-compat alias
+  subscribeToRealtime: () => {
+    get().subscribeRealtime();
+    
+    // For production with Supabase:
+    /*
+    const channel = supabase
+      .channel('posts_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts'
+        },
+        (payload) => {
+          console.log('Change received!', payload);
+          get().refresh();
+        }
+      )
+      .subscribe();
+
+    // Return cleanup function
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    */
   },
 
   likePost: (postId: string) => {
@@ -214,7 +323,7 @@ export const usePostStore = create<PostStore>()(
               likes_count: post.is_liked 
                 ? post.likes_count - 1 
                 : post.likes_count + 1
-            }
+          }
           : post
       )
     }));
@@ -274,92 +383,7 @@ export const usePostStore = create<PostStore>()(
     }));
   },
 
-  createPost: async (input: { content?: string; imageUri: string | null }) => {
-    try {
-      const content = (input.content ?? '').trim();
-      const imageUri = input.imageUri ?? null;
-      if (!content && !imageUri) {
-        return { error: 'Please add text or an image' };
-      }
-
-      // Pull current user/profile if available
-      const { user, profile } = useAuthStore.getState();
-      const authorId = user?.id ?? 'local_user';
-      const authorUsername = profile?.username ?? profile?.full_name ?? 'You';
-      const authorAvatar = profile?.avatar_url ?? null;
-      // Attempt to insert into Supabase
-      try {
-        const { data, error } = await supabase
-          .from('posts')
-          .insert({ user_id: authorId, image_url: imageUri, caption: content, location: null })
-          .select()
-          .maybeSingle();
-        if (!error && data) {
-          const p: Post = {
-            id: String(data.id),
-            user_id: data.user_id,
-            author_id: data.user_id,
-            username: authorUsername,
-            user_avatar: authorAvatar ?? 'https://i.pravatar.cc/150?img=1',
-            image_url: data.image_url ?? null,
-            caption: data.caption ?? '',
-            content: data.caption ?? '',
-            location: data.location ?? null,
-            likes_count: 0,
-            comments_count: 0,
-            created_at: data.created_at ?? new Date().toISOString(),
-            is_liked: false,
-            is_bookmarked: false,
-            author: { username: authorUsername, avatar_url: authorAvatar, full_name: authorUsername },
-          };
-          set((state) => ({ posts: [p, ...state.posts] }));
-          return {};
-        }
-      } catch (e) {
-        console.warn('Supabase insert failed, falling back to local', e);
-      }
-
-      // Fallback to local only
-      const local: Post = {
-        id: Date.now().toString(),
-        user_id: authorId,
-        author_id: authorId,
-        username: authorUsername,
-        user_avatar: authorAvatar ?? 'https://i.pravatar.cc/150?img=1',
-        image_url: imageUri,
-        caption: content,
-        content,
-        location: null,
-        likes_count: 0,
-        comments_count: 0,
-        created_at: new Date().toISOString(),
-        is_liked: false,
-        is_bookmarked: false,
-        author: { username: authorUsername, avatar_url: authorAvatar, full_name: authorUsername },
-      };
-      set((state) => ({ posts: [local, ...state.posts] }));
-      return {};
-    } catch (e) {
-      console.error('Error creating post:', e);
-      return { error: 'Failed to create post' };
-    }
-  },
-
-  deletePost: async (postId: string) => {
-    try {
-      // Try delete in Supabase first (will respect RLS)
-      const { error } = await supabase.from('posts').delete().eq('id', postId);
-      if (error) throw error;
-      set((state) => ({ posts: state.posts.filter((p) => p.id !== postId) }));
-    } catch (e) {
-      console.error('Failed to delete post from Supabase:', e);
-    }
+  deletePost: (postId: string) => {
+    set((state) => ({ posts: state.posts.filter((p) => p.id !== postId) }));
   }
-    }),
-    {
-      name: 'posts-store',
-      storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ posts: state.posts }),
-    }
-  )
-);
+}));

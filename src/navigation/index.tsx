@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ActivityIndicator, View } from 'react-native';
@@ -9,6 +9,7 @@ import FeedScreen from './../screens/FeedScreen';
 import CreatePostScreen from './../screens/CreatePostScreen';
 import ProfileScreen from './../screens/ProfileScreen';
 import { useAuthStore } from './../stores/authStore';
+import { useThemeStore } from './../stores/themeStore';
 
 
         const Stack = createNativeStackNavigator();
@@ -16,22 +17,30 @@ import { useAuthStore } from './../stores/authStore';
 
 
         function TabsNav() {
+          const isDark = useThemeStore((s) => s.isDark);
+          const colors = {
+            tabBg: isDark ? '#0f0f10' : '#fff',
+            border: isDark ? '#1f1f22' : '#e5e7eb',
+            active: isDark ? '#e5e7eb' : '#111',
+            inactive: isDark ? '#a1a1aa' : '#9ca3af',
+          } as const;
+
           return (
             <Tabs.Navigator
               screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarShowLabel: false,
-                tabBarActiveTintColor: '#111',
-                tabBarInactiveTintColor: '#9ca3af',
+                tabBarActiveTintColor: colors.active,
+                tabBarInactiveTintColor: colors.inactive,
                 tabBarStyle: {
                   height: 60,
                   paddingBottom: 8,
                   paddingTop: 8,
-                  backgroundColor: '#fff',
-                  borderTopColor: '#e5e7eb',
+                  backgroundColor: colors.tabBg,
+                  borderTopColor: colors.border,
                   borderTopWidth: 1,
                 },
-                tabBarIcon: ({ color, size, focused }) => {
+                tabBarIcon: ({ color, size }) => {
                   let icon: keyof typeof Feather.glyphMap = 'circle';
                   switch (route.name) {
                     case 'Feed':
@@ -58,6 +67,7 @@ import { useAuthStore } from './../stores/authStore';
 
         export default function RootNav() {
         const { session, loading } = useAuthStore();
+        const isDark = useThemeStore((s) => s.isDark);
 
 
         if (loading) {
@@ -70,7 +80,7 @@ import { useAuthStore } from './../stores/authStore';
 
 
         return (
-        <NavigationContainer>
+        <NavigationContainer theme={isDark ? DarkTheme : DefaultTheme}>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
         {session ? (
         <Stack.Screen name="App" component={TabsNav} />
