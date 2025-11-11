@@ -12,8 +12,6 @@
     },
     "production": {
       "env": {
-        "SUPABASE_URL": "https://rhbrmaoasvxndojsxdgd.supabase.co",
-        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYnJtYW9hc3Z4bmRvanN4ZGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2NzgzODMsImV4cCI6MjA3ODI1NDM4M30.afUpGi4r8hWwLh1ugqCmxqZxns_OCdXgRb8eOdBFf2c",
         "ORG_GRADLE_PROJECT_kotlinJvmTarget": "17"
       },
       "android": {
