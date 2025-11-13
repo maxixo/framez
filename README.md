@@ -96,3 +96,6 @@ Scripts
 - `npm run ios` — build/run iOS dev client (macOS)
 - `npm run web` — web preview
 
+Make use of this appetizer.io link to preview the app , the first link expired : 
+
+https://appetize.io/app/b_fktlwpb4qq7cbugikpjny5te5a
